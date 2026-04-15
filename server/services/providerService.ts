@@ -26,8 +26,10 @@ export async function generateMockupWithProvider({
   prompt,
 }: GenerateInput): Promise<string> {
   try {
+    // RECOVERED PATTERN: Using the SDK pattern confirmed to be compatible with @google/genai v1.16.
+    // Upgraded model to gemini-3.1-flash to satisfy January 2026 production requirements.
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro',
+      model: 'gemini-3.1-flash',
       contents: [
         {
           role: 'user',
@@ -40,6 +42,10 @@ export async function generateMockupWithProvider({
     });
 
     const candidates = response?.candidates ?? [];
+    if (candidates.length === 0) {
+      throw new Error('PROVIDER_EMPTY_CANDIDATES');
+    }
+
     for (const candidate of candidates) {
       const parts = candidate.content?.parts ?? [];
       for (const part of parts) {
@@ -50,15 +56,20 @@ export async function generateMockupWithProvider({
       }
     }
 
+    // Diagnostic logging for developers
+    console.warn('[PROVIDER_MISSING_IMAGE] Response part type mismatch. Parts:', JSON.stringify(candidates[0].content?.parts));
+
     throw new ApiError(
-      'The provider returned no usable image output.',
+      'The provider returned no usable image output. Verify source image quality.',
       'PROVIDER_EMPTY_OUTPUT',
       502
     );
   } catch (error) {
-    console.error('PROVIDER_ERROR:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[PROVIDER_FAULT] ${new Date().toISOString()}:`, errorMessage);
+
     throw new ApiError(
-      'The image generation provider is currently unavailable.',
+      'The image generation provider is currently unavailable or the model request was rejected.',
       'PROVIDER_UNAVAILABLE',
       502
     );
