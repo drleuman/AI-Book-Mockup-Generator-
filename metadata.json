@@ -1,0 +1,5 @@
+{
+  "name": "AI Book Mockup Generator",
+  "description": "Generate photorealistic book mockups from a cover image and specifications using AI. Customize binding, finish, texture, and more to create the perfect presentation for your book.",
+  "requestFramePermissions": []
+}
