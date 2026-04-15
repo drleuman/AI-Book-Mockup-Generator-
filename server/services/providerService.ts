@@ -2,6 +2,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { config } from '../config.js';
 import { ApiError } from '../utils/security.js';
+import { logger } from '../utils/logger.js';
 
 const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
@@ -26,9 +27,6 @@ export async function generateMockupWithProvider({
   prompt,
 }: GenerateInput): Promise<string> {
   try {
-    // PRODUCTION SPECIFICATION: Using 'gemini-3.1-flash-image-preview'.
-    // This is the dedicated model for image generation/editing workflows as of 2026.
-    // Transitioning away from general-purpose 'gemini-3.1-flash'.
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-flash-image-preview',
       contents: [
@@ -50,28 +48,39 @@ export async function generateMockupWithProvider({
     for (const candidate of candidates) {
       const parts = candidate.content?.parts ?? [];
       for (const part of parts) {
-        // Correctly handle the inlineData part containing the rendered mockup
         const inlineData = (part as any).inlineData;
-        if (inlineData?.data) {
-          return inlineData.data as string;
+        
+        if (inlineData) {
+          logger.info('Provider part found', {
+            hasInlineData: true,
+            dataType: typeof inlineData.data,
+            mimeType: inlineData.mimeType
+          });
+
+          if (typeof inlineData.data === 'string' && inlineData.data.length > 0) {
+            return inlineData.data;
+          }
         }
       }
     }
 
     // Diagnostic logging for developers
-    console.warn('[PROVIDER_MISSING_IMAGE] Response part type mismatch. Parts:', JSON.stringify(candidates[0].content?.parts));
+    logger.error('[PROVIDER_DATA_MISMATCH] No valid base64 string found in parts', {
+      partsCount: candidates[0].content?.parts?.length,
+      firstPartKeys: candidates[0].content?.parts?.[0] ? Object.keys(candidates[0].content.parts[0]) : 'none'
+    });
 
     throw new ApiError(
-      'The provider returned no usable image output. Verify source image quality and prompt constraints.',
+      'The provider returned no usable image output. Verify source image quality.',
       'PROVIDER_EMPTY_OUTPUT',
       502
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[PROVIDER_FAULT] ${new Date().toISOString()}:`, errorMessage);
+    logger.error('PROVIDER_FAULT', { error: errorMessage });
 
     throw new ApiError(
-      'The image generation provider is currently unavailable or the model request was rejected.',
+      'The image generation provider is currently unavailable or the request format is incompatible.',
       'PROVIDER_UNAVAILABLE',
       502
     );

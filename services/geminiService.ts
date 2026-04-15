@@ -24,16 +24,35 @@ type ApiErrorResponse = {
   message?: string;
 };
 
-function base64ToObjectUrl(base64: string, mimeType: string): string {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
+/**
+ * Validates that the provided image data is a non-empty string.
+ * Prevents object-to-string coercion [object Object] in data URLs.
+ */
+function ensureBase64String(data: unknown): string {
+  if (typeof data !== 'string' || data.length === 0) {
+    console.error('[CONTRACT_VIOLATION] Expected base64 string, received:', typeof data, data);
+    throw new Error('SYSTEM_FAULT: INVALID_IMAGE_PAYLOAD');
   }
+  return data;
+}
 
-  const blob = new Blob([bytes], { type: mimeType });
-  return URL.createObjectURL(blob);
+function base64ToObjectUrl(base64: string, mimeType: string): string {
+  const verifiedBase64 = ensureBase64String(base64);
+  
+  try {
+    const binary = atob(verifiedBase64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const blob = new Blob([bytes], { type: mimeType });
+    return URL.createObjectURL(blob);
+  } catch (err) {
+    console.error('[DECODE_FAULT] Failed to process base64 string:', err);
+    throw new Error('SYSTEM_FAULT: ASSET_DECODE_FAILED');
+  }
 }
 
 async function parseApiResponse<T>(response: Response): Promise<T> {
@@ -41,7 +60,6 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const err = data as ApiErrorResponse;
-    // Enhanced client-side debugging for production integration
     console.error(`[BFF_REJECTION] ${response.status}:`, err.code, err.message);
     throw new Error(err.message || 'Request failed.');
   }
@@ -92,9 +110,11 @@ export async function generateBookMockup(
     perspective: string;
   }>(response);
 
+  const imageBase64 = ensureBase64String(data.imageBase64);
+
   return {
-    imageBase64: data.imageBase64,
-    imageUrl: base64ToObjectUrl(data.imageBase64, data.mimeType),
+    imageBase64,
+    imageUrl: base64ToObjectUrl(imageBase64, data.mimeType),
     mimeType: data.mimeType,
     perspective: data.perspective,
   };
@@ -135,12 +155,15 @@ export async function generateBookPreviewBatch(
     }>;
   }>(response);
 
-  return data.results.map((item) => ({
-    imageBase64: item.imageBase64,
-    imageUrl: base64ToObjectUrl(item.imageBase64, item.mimeType),
-    mimeType: item.mimeType,
-    perspective: item.perspective,
-  }));
+  return data.results.map((item) => {
+    const imageBase64 = ensureBase64String(item.imageBase64);
+    return {
+      imageBase64,
+      imageUrl: base64ToObjectUrl(imageBase64, item.mimeType),
+      mimeType: item.mimeType,
+      perspective: item.perspective,
+    };
+  });
 }
 
 export function revokeGeneratedMockupUrl(mockup: Pick<GeneratedMockup, 'imageUrl'>) {
