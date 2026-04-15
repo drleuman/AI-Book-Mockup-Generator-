@@ -1,7 +1,7 @@
 
 import sharp from 'sharp';
-import { config } from '../config';
-import { ApiError, ALLOWED_IMAGE_EXTENSIONS, ALLOWED_IMAGE_MIME_TYPES, getExtension } from './security';
+import { config } from '../config.js';
+import { ApiError, ALLOWED_IMAGE_EXTENSIONS, ALLOWED_IMAGE_MIME_TYPES, getExtension } from './security.js';
 
 export type ValidatedImage = {
   sanitizedBuffer: Buffer;

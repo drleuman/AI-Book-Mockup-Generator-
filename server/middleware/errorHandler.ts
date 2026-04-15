@@ -1,15 +1,15 @@
 
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
-import { ApiError } from '../utils/security';
-import { logger } from '../utils/logger';
+import { ApiError } from '../utils/security.js';
+import { logger } from '../utils/logger.js';
 
 export function errorHandler(
   err: unknown,
   req: Request,
   res: Response,
   _next: NextFunction
-) {
+): void | Response {
   if (err instanceof ZodError) {
     logger.warn('Schema validation failed', {
       path: req.path,
@@ -38,9 +38,11 @@ export function errorHandler(
     });
   }
 
+  const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+
   logger.error('Unhandled server error', {
     path: req.path,
-    error: err instanceof Error ? err.message : 'Unknown error',
+    error: errorMessage,
   });
 
   return res.status(500).json({

@@ -2,12 +2,12 @@
 import express from 'express';
 import multer from 'multer';
 import rateLimit from 'express-rate-limit';
-import { config } from '../config';
-import { logger } from '../utils/logger';
-import { ApiError } from '../utils/security';
-import { validateAndSanitizeImageUpload } from '../utils/fileValidation';
-import { generateMockupWithProvider } from '../services/providerService';
-import { generateBatchSchema, generateSchema } from '../validators/mockupSchemas';
+import { config } from '../config.js';
+import { logger } from '../utils/logger.js';
+import { ApiError } from '../utils/security.js';
+import { validateAndSanitizeImageUpload } from '../utils/fileValidation.js';
+import { generateMockupWithProvider } from '../services/providerService.js';
+import { generateBatchSchema, generateSchema } from '../validators/mockupSchemas.js';
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 
 import { GoogleGenAI } from '@google/genai';
-import { config } from '../config';
-import { ApiError } from '../utils/security';
+import { config } from '../config.js';
+import { ApiError } from '../utils/security.js';
 
 const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
 

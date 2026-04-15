@@ -2,9 +2,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import mockupRoutes from './routes/mockups';
-import { config } from './config';
-import { errorHandler } from './middleware/errorHandler';
+import mockupRoutes from './routes/mockups.js';
+import { config } from './config.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
