@@ -26,10 +26,11 @@ export async function generateMockupWithProvider({
   prompt,
 }: GenerateInput): Promise<string> {
   try {
-    // RECOVERED PATTERN: Using the SDK pattern confirmed to be compatible with @google/genai v1.16.
-    // Upgraded model to gemini-3.1-flash to satisfy January 2026 production requirements.
+    // PRODUCTION SPECIFICATION: Using 'gemini-3.1-flash-image-preview'.
+    // This is the dedicated model for image generation/editing workflows as of 2026.
+    // Transitioning away from general-purpose 'gemini-3.1-flash'.
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash',
+      model: 'gemini-3.1-flash-image-preview',
       contents: [
         {
           role: 'user',
@@ -49,6 +50,7 @@ export async function generateMockupWithProvider({
     for (const candidate of candidates) {
       const parts = candidate.content?.parts ?? [];
       for (const part of parts) {
+        // Correctly handle the inlineData part containing the rendered mockup
         const inlineData = (part as any).inlineData;
         if (inlineData?.data) {
           return inlineData.data as string;
@@ -60,7 +62,7 @@ export async function generateMockupWithProvider({
     console.warn('[PROVIDER_MISSING_IMAGE] Response part type mismatch. Parts:', JSON.stringify(candidates[0].content?.parts));
 
     throw new ApiError(
-      'The provider returned no usable image output. Verify source image quality.',
+      'The provider returned no usable image output. Verify source image quality and prompt constraints.',
       'PROVIDER_EMPTY_OUTPUT',
       502
     );
