@@ -38,7 +38,7 @@ const singleGenKey = getSessionRateLimitKey('single_generation');
 const batchGenKey = getSessionRateLimitKey('batch_generation');
 
 
-const applyWatermark = (base64Image: string): Promise<string> => {
+const applyWatermark = (imageUrl: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const mockupImg = new Image();
     const watermarkImg = new Image();
@@ -79,7 +79,7 @@ const applyWatermark = (base64Image: string): Promise<string> => {
     mockupImg.onerror = () => reject(new Error('Failed to load mockup image for watermarking.'));
     watermarkImg.onerror = () => reject(new Error('Failed to load watermark image.'));
 
-    mockupImg.src = `data:image/png;base64,${base64Image}`;
+    mockupImg.src = imageUrl;
     watermarkImg.src = `data:image/png;base64,${WATERMARK_BASE64}`;
   });
 };
@@ -223,7 +223,7 @@ const App: React.FC = () => {
         setError(null);
 
         const resultImage = await generateBookMockup(coverImage, options, defaultPerspective.value);
-        const watermarkedImageUrl = await applyWatermark(resultImage);
+        const watermarkedImageUrl = await applyWatermark(resultImage.imageUrl);
         
         const newMockup: GeneratedMockup = {
             id: Date.now().toString(),
