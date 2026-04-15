@@ -27,7 +27,7 @@ export async function generateMockupWithProvider({
 }: GenerateInput): Promise<string> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', // Using current stable model string
+      model: 'gemini-3.1-pro',
       contents: [
         {
           role: 'user',
