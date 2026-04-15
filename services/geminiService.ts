@@ -1,14 +1,15 @@
 
 // services/geminiService.ts
+import { normalizePayload, normalizePerspective } from '../utils/normalization';
 
 export interface MockupOptions {
-  bindingType: 'paperback' | 'hardcover' | 'spiral';
-  coverFinish: 'matte' | 'glossy';
-  materialTexture: 'smooth' | 'textured' | 'linen';
+  bindingType: string;
+  coverFinish: string;
+  materialTexture: string;
   spineWidth: number;
-  caseWrap?: boolean;
+  caseWrap?: boolean | string;
   backgroundColor: string;
-  bookFormat: 'a4' | 'a5' | '6x9' | '8.5x11' | 'square';
+  bookFormat: string;
 }
 
 export interface GeneratedMockup {
@@ -40,6 +41,8 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const err = data as ApiErrorResponse;
+    // Enhanced client-side debugging for production integration
+    console.error(`[BFF_REJECTION] ${response.status}:`, err.code, err.message);
     throw new Error(err.message || 'Request failed.');
   }
 
@@ -69,10 +72,13 @@ export async function generateBookMockup(
   options: MockupOptions,
   perspective: string
 ): Promise<GeneratedMockup> {
+  const normalizedOptions = normalizePayload(options);
+  const normalizedPerspective = normalizePerspective(perspective);
+
   const formData = new FormData();
   formData.append('cover', coverImage);
-  formData.append('perspective', perspective);
-  formData.append('options', JSON.stringify(options));
+  formData.append('perspective', normalizedPerspective);
+  formData.append('options', JSON.stringify(normalizedOptions));
 
   const response = await fetch('/api/mockups/generate', {
     method: 'POST',
@@ -107,10 +113,13 @@ export async function generateBookPreviewBatch(
   options: MockupOptions,
   perspectives: string[]
 ): Promise<GeneratedMockup[]> {
+  const normalizedOptions = normalizePayload(options);
+  const normalizedPerspectives = perspectives.map(normalizePerspective);
+
   const formData = new FormData();
   formData.append('cover', coverImage);
-  formData.append('perspectives', JSON.stringify(perspectives));
-  formData.append('options', JSON.stringify(options));
+  formData.append('perspectives', JSON.stringify(normalizedPerspectives));
+  formData.append('options', JSON.stringify(normalizedOptions));
 
   const response = await fetch('/api/mockups/generate-batch', {
     method: 'POST',

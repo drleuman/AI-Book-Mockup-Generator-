@@ -24,6 +24,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileChange, onError, previewU
     fileInputRef.current?.click();
   };
 
+  const resetInput = () => {
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  };
+
   const processIncomingFile = async (file: File | null) => {
     if (!file) {
       onFileChange(null);
@@ -43,7 +49,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileChange, onError, previewU
       
       if (onError) onError(message);
       onFileChange(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      resetInput();
     } finally {
       setIsValidating(false);
     }
@@ -61,8 +67,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileChange, onError, previewU
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    await processIncomingFile(file);
-    e.currentTarget.value = '';
+    if (file) {
+        await processIncomingFile(file);
+    }
+    resetInput();
   };
 
   return (

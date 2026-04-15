@@ -8,6 +8,13 @@ import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
+/**
+ * PRODUCTION ARCHITECTURE: TRUST PROXY
+ * Required when behind Nginx or other reverse proxies to 
+ * correctly identify client IP for rate limiting and security guards.
+ */
+app.set('trust proxy', 1);
+
 app.disable('x-powered-by');
 
 app.use(
