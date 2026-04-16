@@ -38,7 +38,7 @@ function ensureBase64String(data: unknown): string {
 
 function base64ToObjectUrl(base64: string, mimeType: string): string {
   const verifiedBase64 = ensureBase64String(base64);
-  
+
   try {
     const binary = atob(verifiedBase64);
     const bytes = new Uint8Array(binary.length);
@@ -56,7 +56,18 @@ function base64ToObjectUrl(base64: string, mimeType: string): string {
 }
 
 async function parseApiResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T | ApiErrorResponse;
+  const contentType = response.headers.get('content-type');
+  let data: any;
+
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json();
+  } else if (!response.ok) {
+    const text = await response.text();
+    console.error(`[BFF_REJECTION] ${response.status}: Non-JSON error response.`, text.substring(0, 200));
+    throw new Error(`Server Error (${response.status}): The request timed out or the server returned an invalid response.`);
+  } else {
+    throw new Error('Unexpected response format from server.');
+  }
 
   if (!response.ok) {
     const err = data as ApiErrorResponse;

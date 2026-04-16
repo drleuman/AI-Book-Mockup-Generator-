@@ -136,22 +136,22 @@ router.post(
         );
       }
 
-      const results = [];
-      for (const perspective of parsed.perspectives) {
-        const prompt = buildPrompt(parsed.options, perspective);
+      const results = await Promise.all(
+        parsed.perspectives.map(async (perspective) => {
+          const prompt = buildPrompt(parsed.options, perspective);
+          const imageBase64 = await generateMockupWithProvider({
+            imageBuffer: validated.sanitizedBuffer,
+            mimeType: validated.mimeType,
+            prompt,
+          });
 
-        const imageBase64 = await generateMockupWithProvider({
-          imageBuffer: validated.sanitizedBuffer,
-          mimeType: validated.mimeType,
-          prompt,
-        });
-
-        results.push({
-          perspective,
-          imageBase64,
-          mimeType: 'image/png',
-        });
-      }
+          return {
+            perspective,
+            imageBase64,
+            mimeType: 'image/png',
+          };
+        })
+      );
 
       logger.info('Batch mockups generated', {
         ip: req.ip,

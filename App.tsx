@@ -181,13 +181,17 @@ const App: React.FC = () => {
 
         for (const res of results) {
             const watermarkedUrl = await applyWatermark(res.imageUrl);
+            
+            // Revoke the temporary blob URL from geminiService
+            revokeGeneratedMockupUrl(res);
+
             newMockups.push({
-                id: `${Date.now()}-${res.perspectiveValue}`,
+                id: `${Date.now()}-${res.perspective}`,
                 imageUrl: watermarkedUrl,
                 options: { ...options },
                 isPreview: true,
-                perspectiveLabel: res.perspectiveLabel,
-                perspectiveValue: res.perspectiveValue,
+                perspectiveLabel: PERSPECTIVE_OPTIONS.find(p => p.value === res.perspective)?.label || res.perspective,
+                perspectiveValue: res.perspective,
             });
         }
         
@@ -225,6 +229,9 @@ const App: React.FC = () => {
         const resultImage = await generateBookMockup(coverImage, options, defaultPerspective.value);
         const watermarkedImageUrl = await applyWatermark(resultImage.imageUrl);
         
+        // Revoke the temporary blob URL from geminiService
+        revokeGeneratedMockupUrl(resultImage);
+
         const newMockup: GeneratedMockup = {
             id: Date.now().toString(),
             imageUrl: watermarkedImageUrl,
